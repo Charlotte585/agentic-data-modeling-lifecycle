@@ -47,7 +47,7 @@ The primary example is **marketing- and digital-journey oriented**, while the fr
 
 Customer journeys and marketing outcomes are commonly distributed across transaction systems, digital behavioral platforms such as Adobe Analytics, campaign metadata, and multiple customer or visitor identifiers. These sources operate at different grains, use different identities, and encode customer behavior through different event and measurement conventions.
 
-The project demonstrates how to transform this heterogeneous source landscape into reusable data products that connect marketing activity, digital behavior, customer identity, and transaction outcomes.
+The project demonstrates how to transform this heterogeneous source landscape into reusable data products that support campaign-informed sales forecasting, customer attrition and journey-loss analysis, and GTM / campaign impact analysis.
 
 ### Raw Data Sources
 
