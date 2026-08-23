@@ -1,11 +1,11 @@
-# Data Product Modeling Framework
+# Agentic Data Modeling Lifecycle
 
 > **Status:** Planning / v0.2  
-> A reusable framework for translating business needs into well-designed, validated data models, with dbt as the reference implementation layer and AI used selectively for planning, review, and automation.
+> A reusable framework for translating business requirements into well-designed, validated data models through structured modeling decisions, production-style dbt implementation, and agentic automation.
 
 ## Project Thesis
 
-The value of this project is not simply generating code with AI. The goal is to make an end-to-end data-product modeling process explicit, reusable, and executable.
+The value of this project is not simply generating code with AI. The goal is to make an end-to-end data-modeling lifecycle explicit, reusable, and executable.
 
 A strong data model starts before SQL. It requires understanding:
 
@@ -415,7 +415,7 @@ The initial stack is intentionally local and reproducible. Additional warehouses
 ## Proposed Repository Structure
 
 ```text
-data-product-modeling-framework/
+agentic-data-modeling-lifecycle/
 │
 ├── README.md
 ├── pyproject.toml
@@ -423,7 +423,7 @@ data-product-modeling-framework/
 ├── .env.example
 │
 ├── src/
-│   └── data_product_modeling/
+│   └── agentic_data_modeling/
 │       ├── contracts/
 │       │   ├── business_intent.py
 │       │   ├── source_metadata.py
