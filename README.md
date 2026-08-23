@@ -1,579 +1,421 @@
-# Agentic Data Modeling Assistant
+# Data Product Modeling Framework
 
-> **Status:** Planning / v0.1  
-> A reusable framework for turning business or ML intent into structured, executable, and validated data models.
+> **Status:** Planning / v0.2  
+> A reusable framework for translating business needs into well-designed, validated data models, with dbt as the reference implementation layer and AI used selectively for planning, review, and automation.
 
-## Why this project
+## Project Thesis
 
-Data modeling is more than SQL generation. In real analytics and machine-learning workflows, the difficult work is usually deciding:
+The value of this project is not simply generating code with AI. The goal is to make an end-to-end data-product modeling process explicit, reusable, and executable.
 
-- what the target grain should be,
-- which source entities are relevant,
-- how tables should join,
-- which intermediate models are needed,
-- how metrics or features should be defined,
-- what temporal constraints apply,
-- how the resulting model should be validated and documented.
+A strong data model starts before SQL. It requires understanding:
 
-This project treats data modeling as a **structured reasoning problem**.
+- what business problem the data product needs to solve,
+- what downstream decision, analytics workflow, or model will consume it,
+- what the final data product should contain and at what grain,
+- which source data is required and how those sources relate,
+- how the model should be structured for reuse and maintainability,
+- how the design should be implemented and tested in dbt,
+- and how the same methodology can transfer to a different business context.
 
-The goal is to build a domain-agnostic assistant that converts:
+This project therefore treats data modeling as a **business-to-data reasoning problem**, not only a SQL-generation problem.
 
-**Business Intent + Source Metadata + Modeling Policies**
-
-into:
-
-**Model Specification → Executable Models → Validation → Documentation**
-
-AI agents are used where reasoning is useful, while deterministic tools are used for profiling, execution, and validation.
-
----
-
-## Design Principles
-
-1. **Domain-agnostic by design**  
-   The core framework should not depend on a single dataset, company, or business domain.
-
-2. **Model specification before code generation**  
-   The system should create a structured `ModelSpec` before generating SQL or dbt models.
-
-3. **Deterministic checks before AI interpretation**  
-   Row counts, null rates, uniqueness, cardinality, schema inspection, and execution results should come from deterministic tools.
-
-4. **AI for reasoning, not for pretending validation passed**  
-   Generated models must be compiled, executed, and tested.
-
-5. **Human-readable and machine-readable outputs**  
-   Modeling decisions should be inspectable, versionable, and reusable.
-
-6. **Policy-driven modeling**  
-   Modeling conventions and quality expectations should be explicit rather than embedded only in prompts.
-
-7. **Portable architecture**  
-   The framework should be extensible to additional databases, transformation engines, and business use cases.
-
----
-
-## Conceptual Architecture
+The core workflow is:
 
 ```text
-                    ┌──────────────────────┐
-                    │   Business Intent    │
-                    └──────────┬───────────┘
-                               │
-┌────────────────────┐         │         ┌────────────────────┐
-│   Source Metadata  │─────────┼────────▶│  Modeling Engine   │
-└────────────────────┘         │         └─────────┬──────────┘
-                               │                   │
-┌────────────────────┐         │                   ▼
-│  Modeling Policies │─────────┘               ModelSpec
-└────────────────────┘                             │
-                                                  │
-                              ┌───────────────────┼───────────────────┐
-                              ▼                   ▼                   ▼
-                         Model Compiler      Validation Engine    Documentation
-                              │                   │
-                              └──────────┬────────┘
-                                         ▼
-                                  Execution Layer
-                                         │
-                                    PASS / FAIL
-                                         │
-                                         ▼
-                                  Review / Repair
+Business Need
+     ↓
+Data Product Definition
+     ↓
+Source & Modeling Design
+     ↓
+ModelSpec
+     ↓
+dbt Implementation
+     ↓
+Validation & Engineering Workflow
+     ↓
+Validated Data Model
+     ↓
+Agentic Assistance & Automation
 ```
+
+The framework is designed to demonstrate both **data-product judgment** and **implementation depth**. The modeling methodology comes first; AI is added only where it can automate repeatable reasoning or review steps.
 
 ---
 
-## Core Inputs
+## What This Project Demonstrates
 
-### 1. Business Intent
+### Business-first data modeling
 
-A structured description of what the model needs to support.
+The project begins with the business problem and the expected downstream use of the data product rather than with a dataset or a technology choice.
 
-Examples:
+### Reusable modeling methodology
+
+Business requirements, source metadata, modeling decisions, and implementation rules are represented through explicit contracts instead of being embedded only in ad hoc SQL or prompts.
+
+### Production-style dbt implementation
+
+The reference implementation goes beyond basic SQL models and covers layered modeling, materializations, tests, reusable macros, documentation, and incremental processing.
+
+### Validation as part of modeling
+
+A model is not considered complete simply because SQL executes. Grain, relationships, assumptions, data-quality rules, and dbt tests are part of the modeling contract.
+
+### AI as an accelerator, not the source of judgment
+
+Agents can help draft plans, review artifacts, diagnose failures, and automate repeatable steps after the underlying methodology and reference implementation are established.
+
+### Transferability across business contexts
+
+The framework should work across multiple domains without changing its core modeling principles.
+
+---
+
+## Core Concepts
+
+### `BusinessIntent`
+
+Defines why the model exists and how it will be used.
+
+Example:
 
 ```yaml
-objective: measure user activation
-entity: user
-requirements:
-  - activation must occur within 7 days of signup
-  - activation requires at least one qualifying event
-```
-
-or:
-
-```yaml
-objective: create point-in-time-correct features for churn prediction
+objective: measure customer engagement and transaction performance
 entity: customer
-prediction_window_days: 30
+use_case: customer analytics
+required_outputs:
+  - customer_id
+  - engagement_metrics
+  - transaction_metrics
+  - customer_attributes
 ```
 
-### 2. Source Metadata
+### `SourceMetadata`
 
-Schema and profiling information describing available source data.
+Describes the source data available to satisfy the business requirement.
 
-Potential metadata includes:
+Typical metadata includes:
 
-- table names,
+- source table and platform,
 - columns and data types,
-- row counts,
-- null rates,
-- uniqueness ratios,
+- grain,
 - candidate primary keys,
 - candidate foreign keys,
-- join cardinalities,
+- join cardinality,
 - timestamp fields,
-- representative sample values.
+- null and uniqueness patterns,
+- freshness assumptions.
 
-### 3. Modeling Policies
+### `ModelSpec`
 
-Reusable rules that constrain modeling decisions.
-
-Example:
-
-```yaml
-modeling_rules:
-  require_grain_definition: true
-  require_primary_key: true
-  enforce_staging_layer: true
-  prohibit_future_data_for_features: true
-
-quality_rules:
-  require_not_null_primary_key: true
-  require_unique_primary_key: true
-  validate_relationships: true
-```
-
----
-
-## Core Abstraction: `ModelSpec`
-
-The main intermediate artifact is a structured model specification.
+Captures the modeling decisions before implementation.
 
 Example:
 
 ```yaml
-model_name: user_activation
-
-purpose: >
-  Measure whether a user reaches the activation definition
-  within seven days of signup.
+model_name: customer_performance
+purpose: provide a reusable customer-level analytics model
 
 grain:
-  - user_id
+  - customer_id
 
 sources:
-  - users
-  - events
+  - customers
+  - orders
+  - engagement_events
 
-models:
-  - stg_users
-  - stg_events
-  - int_user_activation_events
-  - mart_user_activation
-
-outputs:
-  - activation_flag
-  - activation_timestamp
-  - days_to_activation
+layers:
+  staging:
+    - stg_customers
+    - stg_orders
+    - stg_engagement_events
+  intermediate:
+    - int_customer_orders
+    - int_customer_engagement
+  marts:
+    - mart_customer_performance
 
 validation:
-  - user_id is not null
-  - user_id is unique at the target grain
-  - activation_timestamp is not before signup_timestamp
+  - customer_id is not null
+  - customer_id is unique at the final grain
+  - order relationships are valid
 ```
 
-The `ModelSpec` separates **modeling decisions** from **implementation details**.  
-Compilers can later translate the same specification into dbt, SQL, or other execution targets.
+`ModelSpec` is the central bridge between business and data-modeling decisions and their physical dbt implementation.
 
 ---
 
 # End-to-End Build Plan
 
-## Phase 0 — Project Contract and Evaluation Criteria
+## Phase 1 — Business & Data Product Definition
 
-**Goal:** Define what the framework is responsible for before implementing agents.
+**Goal:** Start from the business problem and define the data product before choosing implementation details.
 
-Deliverables:
+Key questions:
 
-- project scope and non-goals,
-- initial `BusinessIntent` schema,
-- initial `ModelingPolicy` schema,
-- initial `ModelSpec` schema,
-- definition of a valid modeling plan,
-- evaluation rubric for generated models.
-
-Initial evaluation dimensions:
-
-- correct target grain,
-- appropriate source selection,
-- valid join relationships,
-- sensible model decomposition,
-- correct time-window logic,
-- absence of feature leakage,
-- executable generated code,
-- passing data-quality checks,
-- useful documentation.
-
-**Exit criteria:** A modeling proposal can be evaluated independently of whether an LLM generated it.
-
----
-
-## Phase 1 — Project Foundation
-
-**Goal:** Create a reproducible local development environment.
-
-Initial stack:
-
-- Python
-- Pydantic
-- DuckDB
-- dbt Core + dbt-duckdb
-- pytest
+- What business problem are we solving?
+- What decision or downstream use case will consume this data?
+- What should the final data product contain?
+- What is the target grain?
+- Which outputs are required versus optional?
 
 Deliverables:
 
-- Python project configuration,
-- initial package structure,
-- dbt project,
-- local DuckDB environment,
-- test framework,
-- configuration management,
-- sample fixture data.
-
-**Exit criteria:**
-
-```bash
-pytest
-dbt debug
-```
-
-both succeed.
-
----
-
-## Phase 2 — Metadata and Schema Intelligence
-
-**Goal:** Convert physical source data into reusable structured metadata.
-
-Build deterministic profiling utilities for:
-
-- schema discovery,
-- row counts,
-- null rates,
-- distinct counts,
-- uniqueness ratios,
-- numeric and timestamp ranges,
-- candidate keys,
-- candidate relationships,
-- table cardinality.
-
-Then add a reasoning layer that interprets the deterministic profile to infer:
-
-- probable table grain,
-- business entities,
-- likely relationships,
-- relevant source tables,
-- modeling risks.
-
-Deliverables:
-
-```text
-Source Data
-    ↓
-Deterministic Profiler
-    ↓
-SourceMetadata
-    ↓
-Schema Intelligence
-```
-
-**Exit criteria:** Multiple unrelated source schemas can be represented through the same metadata contract.
-
----
-
-## Phase 3 — Modeling Planner
-
-**Goal:** Convert business intent, source metadata, and policies into a `ModelSpec`.
-
-The planner should reason about:
-
+- `BusinessIntent`,
+- expected output contract,
 - target grain,
-- source relevance,
-- entity relationships,
-- join paths,
-- staging / intermediate / mart decomposition,
-- dimensions and measures,
-- feature definitions,
-- temporal windows,
-- target definitions,
-- quality requirements,
-- potential leakage.
+- key business definitions,
+- assumptions and constraints.
 
-Initial workflow:
+**Exit criteria:** The desired data product can be explained without referring to implementation code.
+
+---
+
+## Phase 2 — Source & Modeling Design
+
+**Goal:** Translate the desired output into a clear source and modeling plan.
+
+Key activities:
+
+- identify the required entities,
+- map required outputs to available source data,
+- identify authoritative sources,
+- define source grains,
+- define primary and foreign keys,
+- evaluate join cardinality,
+- define staging, intermediate, and mart boundaries,
+- document assumptions and reusable logic.
+
+Deliverables:
 
 ```text
 BusinessIntent
       +
 SourceMetadata
-      +
-ModelingPolicy
       ↓
-Modeling Planner
-      ↓
-ModelSpec
+   ModelSpec
 ```
 
-Add a separate reviewer step that critiques the proposed specification before implementation.
+The initial implementation may use deterministic profiling for basic schema statistics, but the emphasis of this phase is modeling judgment rather than building a large schema-discovery system.
 
-Reviewer checks:
-
-- grain consistency,
-- many-to-many join risks,
-- unnecessary complexity,
-- ambiguous definitions,
-- temporal correctness,
-- feature leakage,
-- missing validation rules.
-
-**Exit criteria:** The planner produces a valid structured specification rather than free-form prose or raw SQL.
+**Exit criteria:** The proposed model can be reviewed before any dbt model is written.
 
 ---
 
-## Phase 4 — Model Compiler
+## Phase 3 — dbt Reference Implementation
 
-**Goal:** Translate `ModelSpec` into executable artifacts.
+**Goal:** Implement the approved `ModelSpec` as a production-style dbt project.
 
-Initial compiler target: **dbt**
+This is the primary implementation and learning layer of the project.
 
-Generate:
-
-- staging models,
-- intermediate models,
-- marts / feature models,
-- `schema.yml`,
-- data tests,
-- model descriptions,
-- column descriptions.
-
-Architecture:
+### Project structure
 
 ```text
-ModelSpec
+raw sources
     ↓
-dbt Compiler
+staging
     ↓
-SQL + YAML + Tests + Documentation
+intermediate
+    ↓
+marts
 ```
 
-Future compiler targets may include:
+### dbt concepts to implement
 
-- generic SQL,
-- PySpark transformations,
-- feature definitions,
-- semantic-layer configuration.
+- `source()` and source definitions,
+- `ref()` and dependency management,
+- staging models,
+- intermediate models,
+- mart models,
+- `view`, `table`, `ephemeral`, and `incremental` materializations,
+- incremental loading strategies,
+- `unique_key` handling,
+- late-arriving or updated records where relevant,
+- `schema.yml`,
+- `not_null`, `unique`, `relationships`, and `accepted_values` tests,
+- singular tests,
+- at least one reusable generic test,
+- macros for reusable transformation logic,
+- model and column documentation,
+- `dbt docs generate` and lineage inspection.
 
-**Exit criteria:** Generated dbt artifacts compile against the provided source environment.
+### Reference-first approach
+
+The first complete dbt implementation will be designed and reviewed as a human reference implementation before agentic generation is introduced.
+
+This creates a benchmark for evaluating whether automated implementations make appropriate modeling decisions.
+
+**Exit criteria:**
+
+```bash
+dbt build
+dbt docs generate
+```
+
+complete successfully and the resulting model satisfies the agreed `ModelSpec`.
 
 ---
 
-## Phase 5 — Validation Engine
+## Phase 4 — Validation & Engineering Workflow
 
-**Goal:** Validate the model structurally, semantically, and operationally.
+**Goal:** Make model development reproducible and testable through an engineering workflow.
 
-### Structural validation
+Validation will cover both dbt execution and modeling expectations.
 
-- required primary keys,
-- target-grain uniqueness,
-- null checks,
-- relationship integrity,
-- join cardinality.
-
-### Semantic validation
-
-- grain consistency across transformations,
-- metric and feature definitions,
-- temporal constraints,
-- model-layer policies.
-
-### ML-oriented validation
-
-- feature timestamps do not exceed snapshot timestamps,
-- prediction windows are isolated from feature windows,
-- target leakage checks,
-- snapshot consistency.
-
-### Execution validation
+### dbt validation
 
 ```bash
 dbt parse
-dbt run
+dbt build
 dbt test
 ```
 
-Validation results should be structured and machine-readable.
+### Supporting Python tests
 
-**Exit criteria:** The framework can distinguish "SQL runs" from "the model satisfies its modeling contract."
+Use `pytest` for framework-level logic such as:
+
+- contract validation,
+- ModelSpec parsing,
+- deterministic utility functions,
+- generated configuration checks.
+
+### Lightweight CI
+
+GitHub Actions will run relevant checks on pull requests:
+
+```text
+Pull Request
+     ↓
+Install dependencies
+     ↓
+pytest
+     ↓
+dbt parse
+     ↓
+dbt build
+     ↓
+PASS / FAIL
+```
+
+The goal is to understand and demonstrate a practical analytics-engineering CI workflow without turning the project into a full deployment platform.
+
+**Exit criteria:** A pull request cannot be considered valid without automated model and code checks passing.
 
 ---
 
-## Phase 6 — Review and Repair Loop
+## Phase 5 — Agentic Assistance & Automation
 
-**Goal:** Use concrete validation evidence to repair failed artifacts.
+**Goal:** Automate repeatable parts of the modeling workflow after the methodology and reference implementation are established.
 
-Workflow:
+Potential agent roles:
+
+### Modeling Assistant
 
 ```text
-Generated Model
+BusinessIntent
++
+SourceMetadata
       ↓
-Deterministic Validation
+Draft ModelSpec
+```
+
+### dbt Implementation Assistant
+
+```text
+Approved ModelSpec
       ↓
-Structured Failure
+Suggested dbt implementation
+```
+
+### Reviewer
+
+Review:
+
+- grain consistency,
+- join logic,
+- model layering,
+- missing tests,
+- incremental strategy,
+- documentation quality.
+
+### Repair Assistant
+
+```text
+dbt or validation failure
       ↓
-Repair Agent
+Specific diagnostic evidence
       ↓
-Updated Model / ModelSpec
+Targeted correction
+      ↓
+Re-run deterministic validation
+```
+
+The agent layer should not replace the deterministic execution and validation system. Its purpose is to accelerate a methodology that has already been defined.
+
+**Exit criteria:** Automated suggestions can be compared against the human reference implementation and validated through the same dbt and testing workflow.
+
+---
+
+## Phase 6 — Cross-Business Reusability
+
+**Goal:** Demonstrate that the same modeling process can be transferred to different business situations.
+
+The project will use one primary end-to-end case and a small number of lighter transfer cases.
+
+### Primary case
+
+A complete workflow including:
+
+```text
+Business Problem
+      ↓
+Data Product Definition
+      ↓
+Source Design
+      ↓
+ModelSpec
+      ↓
+dbt Implementation
       ↓
 Validation
+      ↓
+Agentic Review / Automation
 ```
 
-The repair process should:
+### Transfer case examples
 
-- receive specific validation evidence,
-- avoid rewriting unaffected components,
-- record what changed and why,
-- retry only up to a configurable limit,
-- surface unresolved issues to the user.
+Potential domains include:
 
-**Exit criteria:** At least several intentionally constructed failure cases can be detected and repaired or clearly escalated.
+- product analytics: users, events, sessions,
+- commerce: customers, orders, products,
+- subscription: accounts, subscriptions, payments, usage.
 
-Example failure cases:
+The secondary cases do not need to reproduce the entire implementation. Their purpose is to test whether the same contracts and modeling methodology remain useful under a different business problem.
 
-- nonexistent column,
-- incorrect join key,
-- duplicate target grain,
-- orphan foreign key,
-- invalid time window,
-- feature leakage,
-- failed dbt test.
+**Exit criteria:** The framework can represent and reason about multiple business contexts without changing the core modeling approach.
 
 ---
 
-## Phase 7 — Cross-Domain Examples
+## Technical Stack
 
-**Goal:** Demonstrate that the framework is not tied to one Kaggle dataset or business domain.
+Initial implementation:
 
-Keep example datasets intentionally small. They exist to test the framework, not to become the project itself.
+- **Python** — framework utilities, contracts, testing, and automation,
+- **Pydantic** — structured modeling contracts,
+- **DuckDB** — local execution environment,
+- **dbt Core + dbt-duckdb** — reference transformation and modeling layer,
+- **pytest** — Python-level testing,
+- **GitHub Actions** — lightweight CI,
+- **LLM / agent layer** — modeling assistance, review, and repair after the reference workflow is established.
 
-### Example A — Product Analytics
-
-Sources:
-
-```text
-users
-events
-```
-
-Intent:
-
-> Build a seven-day user activation model.
-
-Demonstrates:
-
-- behavioral modeling,
-- event logic,
-- time-window reasoning,
-- analytics marts.
-
-### Example B — Commerce / Dimensional Modeling
-
-Sources:
-
-```text
-customers
-orders
-order_items
-products
-```
-
-Intent:
-
-> Build a reusable customer performance mart.
-
-Demonstrates:
-
-- dimensional modeling,
-- entity relationships,
-- measures and dimensions,
-- reusable semantic definitions.
-
-### Example C — ML Feature Modeling
-
-Sources:
-
-```text
-customers
-transactions
-events
-```
-
-Intent:
-
-> Build point-in-time-correct features for a future customer outcome.
-
-Demonstrates:
-
-- ML-ready data,
-- snapshot modeling,
-- feature windows,
-- leakage prevention.
-
-**Exit criteria:** The same core interfaces and modeling engine work across all three examples without domain-specific branching in the core framework.
-
----
-
-## Phase 8 — Portfolio Hardening
-
-**Goal:** Make the repository understandable and credible to someone who did not build it.
-
-Add:
-
-- architecture diagram,
-- example CLI runs,
-- sample `BusinessIntent`,
-- sample `ModelSpec`,
-- generated dbt output,
-- validation report,
-- repair-loop example,
-- automated tests,
-- GitHub Actions CI,
-- clear limitations,
-- roadmap.
-
-Potential CLI:
-
-```bash
-modeling-assistant plan \
-  --intent examples/product_activation/intent.yml \
-  --sources examples/product_activation/sources.yml \
-  --policies config/modeling_policies.yml
-```
-
-Potential build command:
-
-```bash
-modeling-assistant build \
-  --spec outputs/model_spec.yml \
-  --target dbt
-```
+The initial stack is intentionally local and reproducible. Additional warehouses or execution platforms can be introduced later without changing the core modeling methodology.
 
 ---
 
 ## Proposed Repository Structure
 
 ```text
-agentic-data-modeling-assistant/
+data-product-modeling-framework/
 │
 ├── README.md
 ├── pyproject.toml
@@ -581,88 +423,90 @@ agentic-data-modeling-assistant/
 ├── .env.example
 │
 ├── src/
-│   └── modeling_assistant/
+│   └── data_product_modeling/
 │       ├── contracts/
 │       │   ├── business_intent.py
 │       │   ├── source_metadata.py
-│       │   ├── modeling_policy.py
 │       │   └── model_spec.py
 │       │
-│       ├── profiling/
-│       ├── intelligence/
-│       ├── planning/
-│       ├── review/
-│       ├── compilers/
-│       │   └── dbt/
+│       ├── modeling/
 │       ├── validation/
-│       ├── repair/
+│       ├── automation/
 │       └── cli/
 │
 ├── dbt_project/
-│
-├── config/
-│   └── modeling_policies.yml
+│   ├── models/
+│   │   ├── staging/
+│   │   ├── intermediate/
+│   │   └── marts/
+│   ├── macros/
+│   ├── tests/
+│   └── dbt_project.yml
 │
 ├── examples/
-│   ├── product_activation/
-│   ├── dimensional_mart/
-│   └── ml_features/
+│   ├── primary_case/
+│   └── transfer_cases/
 │
 ├── tests/
 │   ├── unit/
-│   ├── integration/
-│   └── scenarios/
+│   └── integration/
 │
-└── docs/
-    └── architecture/
+└── .github/
+    └── workflows/
 ```
 
 ---
 
-## What This Project Is Not
+## Development Milestones
 
-This project is **not** intended to be:
-
-- a solution optimized for one Kaggle dataset,
-- a generic text-to-SQL chatbot,
-- an LLM wrapper that assumes generated SQL is correct,
-- a replacement for data-modeling judgment,
-- a production data platform for every warehouse from day one.
-
-The initial objective is narrower:
-
-> Build a reusable framework that makes data-modeling reasoning explicit, generates executable models from structured specifications, and verifies those models through deterministic validation.
-
----
-
-## Initial Milestones
-
-- [ ] Define contracts: `BusinessIntent`, `SourceMetadata`, `ModelingPolicy`, `ModelSpec`
-- [ ] Set up Python + DuckDB + dbt development environment
-- [ ] Implement deterministic schema profiler
-- [ ] Implement schema-intelligence layer
-- [ ] Implement modeling planner
-- [ ] Implement ModelSpec reviewer
-- [ ] Implement dbt compiler
-- [ ] Implement structural and semantic validation
-- [ ] Implement execution feedback and repair loop
-- [ ] Add three cross-domain examples
-- [ ] Add CI and portfolio-quality documentation
+- [ ] Define the primary business use case and expected data product
+- [ ] Define `BusinessIntent`, `SourceMetadata`, and `ModelSpec`
+- [ ] Set up Python, DuckDB, dbt, and pytest
+- [ ] Build the human-designed reference dbt implementation
+- [ ] Add dbt tests, macros, incremental logic, and documentation
+- [ ] Add Python validation and GitHub Actions CI
+- [ ] Add agent-assisted ModelSpec planning and review
+- [ ] Add agent-assisted dbt implementation and targeted repair
+- [ ] Validate the framework against additional business contexts
+- [ ] Package the project for portfolio presentation
 
 ---
 
-## Long-Term Extensions
+## How Success Will Be Evaluated
 
-Possible future extensions include:
+The project is successful if it demonstrates that a business requirement can be translated into a reusable data model through a repeatable process and that the implementation can withstand both modeling review and automated validation.
 
-- Snowflake and BigQuery metadata connectors,
-- dbt manifest ingestion,
-- semantic-layer compilation,
-- PySpark compiler,
-- model lineage visualization,
-- human approval checkpoints,
-- policy packs for analytics vs. ML modeling,
-- model-plan evaluation benchmarks,
-- multiple LLM-provider adapters.
+Key evaluation dimensions include:
 
-The core abstraction should remain stable even as execution targets and reasoning implementations evolve.
+- clarity of the business-to-data reasoning,
+- correctness of model grain and entity relationships,
+- quality of dbt layering and dependency design,
+- appropriate use of materializations and incremental logic,
+- meaningful data tests and documentation,
+- reproducible CI validation,
+- usefulness of agentic automation without outsourcing core modeling judgment,
+- transferability of the methodology to another business context.
+
+---
+
+## Downstream Continuation
+
+The validated models produced here are intended to become the starting point for a separate downstream project focused on **ML feature engineering**.
+
+That project will extend the same data-product mindset into:
+
+```text
+Validated Data Model
+      ↓
+Feature Requirements
+      ↓
+FeatureSpec
+      ↓
+Point-in-Time Feature Engineering
+      ↓
+Leakage Validation
+      ↓
+ML-Ready Dataset
+```
+
+Together, the two projects are intended to demonstrate the data foundation between a business problem and downstream analytics or machine-learning consumption.
