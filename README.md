@@ -1,7 +1,7 @@
 # Agentic Data Modeling Lifecycle
 
 > **Status:** Planning / v0.3  
-> A reusable framework for translating business requirements and heterogeneous source data into well-designed, validated data products through structured modeling decisions, production-style dbt implementation, and agentic automation.
+> A reusable framework for translating business requirements and heterogeneous source of data into modernized, validated data products through structured semantic and dimensional data modeling, production-style dbt implementation, and agentic automation.
 
 ## Project Thesis
 
