@@ -1,11 +1,11 @@
 # Campaign Intelligence Data Product — V1 Design Spec
 
 > **Status:** Draft for review  
-> This document captures the current agreed design decisions for the Campaign Intelligence data product. The dbt structure is proposed and should be reviewed before implementation.
+> This document captures the current agreed design decisions for the Campaign Intelligence data product. The dbt structure remains proposed and should be reviewed before implementation.
 
 ## Product Scope
 
-Campaign Intelligence focuses on reusable campaign setup and economics information. It does **not** include campaign performance outcomes such as impressions, clicks, conversions, revenue, spend efficiency, CPA, or ROAS.
+Campaign Intelligence focuses on reusable campaign setup and campaign economics information. It does **not** include campaign performance outcomes such as impressions, clicks, conversions, revenue, spend efficiency, CPA, or ROAS.
 
 A data product is treated as a governed, reusable package composed of one or more curated models plus explicit business purpose, grain, contracts, lineage, quality rules, and documentation. A curated dataset is therefore an output of a data product, not the full data product itself.
 
@@ -27,11 +27,11 @@ Supported campaign channels are limited to:
 
 ### Purpose
 
-Represent campaign setup and lifecycle state while preserving historical campaign status changes for downstream time-series and point-in-time analysis.
+Represent campaign setup and lifecycle state while preserving historical campaign-status changes for downstream time-series and point-in-time analysis.
 
 ### Grain
 
-One row per campaign × effective campaign version.
+One row per campaign × effective campaign-status version.
 
 ### Business Attributes
 
@@ -41,37 +41,29 @@ One row per campaign × effective campaign version.
 | `campaign_channel` | Campaign delivery channel |
 | `campaign_desired_start_date` | Planned campaign start date |
 | `campaign_desired_end_date` | Planned campaign end date |
-| `campaign_actual_start_date` | Actual campaign start date |
-| `campaign_actual_end_date` | Actual campaign end date |
+| `campaign_actual_start_timestamp` | Timestamp when the campaign actually becomes active |
+| `campaign_actual_end_timestamp` | Timestamp when the campaign actually ends |
 | `campaign_status` | Campaign lifecycle status: `live`, `freeze`, or `inactive` |
 
 ### History Strategy
 
-`dim_campaign` will preserve campaign history using an SCD Type 2-style design.
+`dim_campaign` preserves campaign lifecycle history using an SCD Type 2-style design.
 
-The primary tracked changes are:
+The SCD2 change driver is:
 
 - `campaign_status`
-- `campaign_actual_start_date`
-- `campaign_actual_end_date`
 
-These attributes are related to campaign lifecycle execution and may change as a campaign moves between inactive, live, and frozen states.
+The remaining campaign setup attributes are treated as stable campaign context. In particular, `campaign_actual_start_timestamp` and `campaign_actual_end_timestamp` are lifecycle timestamps that are populated as the campaign progresses, but once established they are assumed to remain fixed rather than independently creating new historical versions.
 
-The following attributes are currently treated as setup context rather than primary historical-change drivers:
-
-- `campaign_channel`
-- `campaign_desired_start_date`
-- `campaign_desired_end_date`
-
-This decision can be revisited if the source data or business requirements show that planned setup values require versioned history.
+This design assumes that corrections to actual start/end timestamps do not occur independently of the corresponding campaign lifecycle transition. If that assumption changes, the tracked-field strategy should be revisited.
 
 ### Technical Attributes
 
 | Attribute | Description |
 |---|---|
 | `campaign_version_key` | Surrogate primary key for each historical campaign version |
-| `valid_from` | Timestamp/date when the version becomes effective |
-| `valid_to` | Timestamp/date when the version stops being effective |
+| `valid_from` | Timestamp when the campaign-status version becomes effective |
+| `valid_to` | Timestamp when the campaign-status version stops being effective |
 | `is_current` | Indicates the current campaign version |
 | `source_updated_at` | Timestamp of the source-side update |
 | `loaded_at` | Warehouse load timestamp |
@@ -82,26 +74,53 @@ This decision can be revisited if the source data or business requirements show 
 
 ### Purpose
 
-Represent campaign-level economics and funding configuration without mixing in downstream campaign performance outcomes.
+Represent campaign-level funding configuration without mixing in downstream campaign performance outcomes.
+
+### Grain
+
+One row per campaign.
 
 ### Business Attributes
 
 | Attribute | Description |
 |---|---|
 | `campaign_id` | Business identifier for the campaign |
-| `campaign_budget_amount` | Campaign budget amount |
+| `budget_effective_timestamp` | Timestamp when the campaign budget becomes effective; expected to equal `campaign_actual_start_timestamp` |
+| `campaign_budget_amount` | Final campaign budget amount established before campaign launch |
 | `budget_currency` | Currency associated with the budget |
 | `budget_type` | Budget basis, such as lifetime, daily, or another defined period |
 
-### Grain and History
+### History Strategy
 
-The final fact-table grain and history strategy are intentionally **TBD** until the budget source behavior is confirmed.
+`fct_campaign_economics` does **not** maintain historical versions in V1.
 
-The key design question is whether campaign budgets are immutable or can be revised over time. If revised budgets must be preserved, the fact will require an effective-period history design.
+The business assumption is that the campaign budget is finalized before the campaign begins and becomes effective when the campaign actually starts. Therefore:
+
+```text
+budget_effective_timestamp = campaign_actual_start_timestamp
+```
+
+Under this assumption, campaign economics are modeled as one record per campaign rather than as an effective-period history table.
+
+### Relationship to `dim_campaign`
+
+The fact retains `campaign_id` and `budget_effective_timestamp` as business relationship attributes. Because `dim_campaign` is historical, the appropriate campaign version can be resolved through an as-of relationship using the campaign identifier and effective timestamp rather than storing `campaign_version_key` as the primary business relationship in the fact.
+
+Conceptually:
+
+```text
+fct_campaign_economics.campaign_id = dim_campaign.campaign_id
+AND budget_effective_timestamp falls within dim_campaign.valid_from / valid_to
+```
+
+This is a temporal/as-of relationship rather than a conventional composite foreign-key constraint.
 
 ### Technical Attributes
 
-Technical keys and effective-period fields are **TBD** pending the final grain decision and the relationship strategy between `fct_campaign_economics` and the historical `dim_campaign`.
+| Attribute | Description |
+|---|---|
+| `source_updated_at` | Timestamp of the source-side economics record update |
+| `loaded_at` | Warehouse load timestamp |
 
 ---
 
@@ -109,14 +128,14 @@ Technical keys and effective-period fields are **TBD** pending the final grain d
 
 > **Review required before implementation.**
 
-The current proposal uses a three-layer modeling pattern with a separate snapshot/history mechanism for campaign lifecycle history.
+The current proposal uses staging → intermediate → marts, with a separate snapshot/history mechanism only for campaign lifecycle history.
 
 ```text
 Raw Sources
     ↓
 Staging
     ↓
-Snapshot / History Tracking
+Snapshot / History Tracking   ← campaign only
     ↓
 Intermediate
     ↓
@@ -159,28 +178,37 @@ dbt_project/
 - minimal business logic
 
 **Snapshot / History**
-- preserve changes in campaign lifecycle state when the source only exposes current state
-- track campaign status and related actual start/end-date changes
+- preserve campaign-status changes when the source only exposes current state
+- use campaign status as the V1 SCD2 change driver
 
 **Intermediate**
-- translate snapshot technical fields into reusable business-facing history logic
-- standardize campaign economics before mart exposure
+- translate snapshot technical fields into reusable campaign-history logic
+- prepare standardized campaign economics before mart exposure
 
 **Marts**
-- expose the consumer-facing dimensional and fact models that form the Campaign Intelligence data product
+- expose the consumer-facing dimension and fact models that form the Campaign Intelligence data product
 
 ---
 
+## Confirmed V1 Decisions
+
+- Campaign Intelligence contains campaign setup and economics, not campaign performance.
+- `dim_campaign` is historical and uses SCD2-style status versioning.
+- `campaign_status` is the V1 SCD2 change driver.
+- Actual campaign start/end are timestamps and are assumed fixed once established.
+- `fct_campaign_economics` has one row per campaign and does not maintain history.
+- Campaign budget is finalized before launch.
+- `budget_effective_timestamp` equals the campaign actual start timestamp.
+- The fact-to-dimension relationship is modeled as a campaign ID + effective-time as-of relationship.
+
 ## Open Decisions
 
-The following items should be reviewed before implementation:
+The following items remain for the dbt-structure review:
 
-1. Confirm whether planned dates (`campaign_desired_start_date`, `campaign_desired_end_date`) should remain static context or become SCD2-tracked fields.
-2. Confirm whether campaign budgets can change over time and therefore require history.
-3. Define the final grain of `fct_campaign_economics`.
-4. Decide whether `fct_campaign_economics` should join directly to `campaign_version_key` or use campaign ID plus effective-time logic.
-5. Confirm whether dbt snapshot is necessary based on the raw source's ability to provide historical campaign state.
+1. Confirm whether a dbt snapshot is the preferred mechanism once the raw campaign source behavior is defined.
+2. Confirm whether both intermediate models add sufficient reusable logic or whether either can be simplified.
+3. Define the exact source-to-model mapping and source requirements.
 
 ## Next Step
 
-After this design is reviewed, define the raw source requirements and source-to-model mapping needed to build `dim_campaign` and `fct_campaign_economics`.
+Review the proposed dbt structure, then define the raw source requirements and source-to-model mapping needed to build `dim_campaign` and `fct_campaign_economics`.
