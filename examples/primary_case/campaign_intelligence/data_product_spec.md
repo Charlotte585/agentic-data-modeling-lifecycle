@@ -1,11 +1,11 @@
 # Campaign Intelligence Data Product — V1 Design Spec
 
-> **Status:** Draft for review  
-> This document captures the current agreed design decisions for the Campaign Intelligence data product. The dbt structure remains proposed and should be reviewed before implementation.
+> **Status:** Supporting data product / V1 design confirmed  
+> Campaign Intelligence provides campaign setup, lifecycle, and economics context for the primary Customer Ad Engagement implementation case.
 
 ## Product Scope
 
-Campaign Intelligence focuses on reusable campaign setup and campaign economics information. It does **not** include campaign performance outcomes such as impressions, clicks, conversions, revenue, spend efficiency, CPA, or ROAS.
+Campaign Intelligence focuses on reusable campaign setup and campaign economics information. It does **not** include campaign performance outcomes such as impressions, clicks, conversions, revenue, spend efficiency, CPA, or ROAS. Those customer-facing interaction and outcome signals belong to the engagement and downstream outcome products.
 
 A data product is treated as a governed, reusable package composed of one or more curated models plus explicit business purpose, grain, contracts, lineage, quality rules, and documentation. A curated dataset is therefore an output of a data product, not the full data product itself.
 
@@ -27,7 +27,7 @@ Supported campaign channels are limited to:
 
 ### Purpose
 
-Represent campaign setup and lifecycle state while preserving historical campaign-status changes for downstream time-series and point-in-time analysis.
+Represent campaign setup and lifecycle state while preserving historical campaign-status changes for downstream point-in-time analysis.
 
 ### Grain
 
@@ -124,11 +124,9 @@ This is a temporal/as-of relationship rather than a conventional composite forei
 
 ---
 
-## Proposed dbt Structure
+## Confirmed dbt Structure
 
-> **Review required before implementation.**
-
-The current proposal uses staging → intermediate → marts, with a separate snapshot/history mechanism only for campaign lifecycle history.
+The product follows staging → intermediate → marts, with a separate snapshot/history mechanism only for campaign lifecycle history.
 
 ```text
 Raw Sources
@@ -154,17 +152,14 @@ dbt_project/
 │   ├── staging/
 │   │   ├── stg_campaign.sql
 │   │   └── stg_campaign_economics.sql
-│   │
 │   ├── intermediate/
 │   │   ├── int_campaign_history.sql
 │   │   └── int_campaign_economics.sql
-│   │
 │   └── marts/
 │       ├── dimensions/
 │       │   └── dim_campaign.sql
 │       └── facts/
 │           └── fct_campaign_economics.sql
-│
 └── snapshots/
     └── snap_campaign_history.sql
 ```
@@ -192,6 +187,7 @@ dbt_project/
 
 ## Confirmed V1 Decisions
 
+- Campaign Intelligence is a supporting product for the customer-side advertising engagement case.
 - Campaign Intelligence contains campaign setup and economics, not campaign performance.
 - `dim_campaign` is historical and uses SCD2-style status versioning.
 - `campaign_status` is the V1 SCD2 change driver.
@@ -201,14 +197,6 @@ dbt_project/
 - `budget_effective_timestamp` equals the campaign actual start timestamp.
 - The fact-to-dimension relationship is modeled as a campaign ID + effective-time as-of relationship.
 
-## Open Decisions
-
-The following items remain for the dbt-structure review:
-
-1. Confirm whether a dbt snapshot is the preferred mechanism once the raw campaign source behavior is defined.
-2. Confirm whether both intermediate models add sufficient reusable logic or whether either can be simplified.
-3. Define the exact source-to-model mapping and source requirements.
-
 ## Next Step
 
-Review the proposed dbt structure, then define the raw source requirements and source-to-model mapping needed to build `dim_campaign` and `fct_campaign_economics`.
+Use this product as supporting campaign context while designing the primary Customer Ad Engagement data product and its raw source requirements.
