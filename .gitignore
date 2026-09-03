@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local Python / VS Code
+.venv/
+.vscode/
+
+# dbt local artifacts
+dbt project/target/
+dbt project/logs/
+dbt project/dbt_packages/
+
+# Local DuckDB database
+*.duckdb
