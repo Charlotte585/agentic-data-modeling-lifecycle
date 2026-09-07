@@ -1,82 +1,57 @@
 # Customer Ad Engagement Data Product — V1 Design Spec
 
-> **Status:** Primary data product / schema defined; data contract in progress
+> **Status:** Confirmed V1 scope and source/staging design
 
 ## Purpose
 
-Provide a reusable, customer-side, event-level representation of advertising exposure and engagement so downstream analytics can reconstruct the ad journey, evaluate journey completeness and drop-off, and connect engagement back to campaign and identity context.
-
-The product is intentionally modeled at the **most detailed event grain** and is continuously updated as new engagement events arrive.
-
-## Business Boundary
-
-The customer journey represented by this product ends at `conversion`.
-
-For V1, **conversion means an actual transaction completed at the merchant and subsequently confirmed back to the advertising platform** through an available tracking or postback mechanism.
-
-Detailed transaction economics such as order amount, SKU, tax, refund, and merchant revenue are outside the scope of Customer Ad Engagement and can be modeled separately.
-
-## Grain
-
-> **One row per engagement event.**
-
-The product does not aggregate to session, customer, campaign, or daily grain. Sessionization and identity resolution are event-level enrichments attached back to individual event records.
-
-## Semantic Design
-
-See [`semantic_workflow.md`](./semantic_workflow.md) for the customer journey, identity, campaign/ad tagging, device/channel context, sessionization, and conversion-boundary workflow.
-
-The event-level composition is:
+Provide the event-level foundation for analyzing customer ad exposure and engagement across the V1 funnel:
 
 ```text
-ONE ROW PER EVENT
-=
-DIRECT EVENT DATA
-+
-DIRECT TAGGING / CONTEXT
-+
-RESOLVED / DERIVED EVENT-LEVEL ENRICHMENT
+impression → view → click
 ```
 
-## V1 Schema
+The design preserves individual tracked ad interaction events so downstream business modeling can be defined separately.
 
-See [`schema.md`](./schema.md) for the standalone V1 candidate schema and attribute data types.
+## V1 Business Boundary
 
-The schema currently includes:
+V1 includes these funnel events:
 
-- direct event fields such as event ID, event timestamp, event type, and visitor ID
-- direct campaign/ad context such as campaign, ad, creative, placement, marketing channel, and device type
-- resolved/derived identity and session attributes
-- a merchant-confirmed conversion identifier for conversion events
+- `impression`: the ad was served to the customer.
+- `view`: the source directly emits a view event once the platform's visibility or attention rule is satisfied, such as the ad remaining visible for at least three seconds.
+- `click`: the customer actively clicked the ad.
 
-## Relationship to Campaign Intelligence
+Conversion and transaction outcomes are outside the V1 boundary. V1 does not define conversion events, conversion attributes, transaction attributes, or conversion-attribution logic.
 
-Campaign setup, lifecycle status, and campaign economics remain in the supporting **Campaign Intelligence** data product rather than being duplicated here.
+## Confirmed Raw Sources
 
-Customer Ad Engagement retains the campaign/ad identifiers needed to connect individual engagement events to that supporting context.
+V1 uses three raw sources:
 
-## Confirmed V1 Decisions
+| Source | Grain |
+|---|---|
+| `raw_ad_events` | One row per tracked ad interaction event |
+| `raw_identity_map` | One row per visitor-account identity state version |
+| `raw_ad_metadata` | One row per ad configuration version |
 
-- Customer Ad Engagement is the primary data product for the implementation case.
-- Grain is one row per engagement event.
-- The journey is event based and supports incomplete journeys as well as completed conversions.
-- Identity resolution enriches events without changing event grain.
-- Session is derived and used for journey reconstruction, completeness, and drop-off analysis.
-- Session ID is not the primary conversion-attribution key.
-- `marketing_channel` and `device_type` are separate concepts.
-- Conversion is the end of this product and means an actual merchant transaction completed and confirmed back to the ad platform.
-- Detailed transaction data and transaction economics are out of scope.
+All three sources will use realistic synthetic fixtures. Public advertising datasets may inform semantics, but they are not V1 implementation inputs.
 
-## Next Step Toward the Data Contract
+See [`raw_source_design.md`](./raw_source_design.md) for the confirmed source columns, version-record conventions, and `stg_ad_events` mapping.
 
-With business purpose, grain, semantic workflow, and candidate attributes defined, the next design work will finalize contract-level metadata such as:
+## Confirmed Staging Boundary
 
-1. required versus optional fields
-2. accepted values and business taxonomy
-3. nullability, uniqueness, and relationship rules
-4. source lineage and raw-versus-derived logic
-5. sessionization and identity-resolution definitions
-6. freshness / update expectations
-7. data-quality tests and validation rules
+`stg_ad_events`:
 
-Raw-source selection and dbt implementation will follow these contract decisions.
+- preserves the `raw_ad_events` grain of one row per tracked ad interaction event
+- renames `raw_event_type` to `event_type`
+- performs only rename, cast, trim, and basic case normalization
+- does not perform identity resolution, sessionization, metadata enrichment, or aggregation
+
+No other staging model behavior is confirmed in this V1 design.
+
+## Schema and Semantic Workflow
+
+- [`schema.md`](./schema.md) records only the confirmed raw and `stg_ad_events` attributes; it does not assign unconfirmed data types or add derived attributes.
+- [`semantic_workflow.md`](./semantic_workflow.md) shows the V1 funnel and the boundary between raw inputs and `stg_ad_events`.
+
+## Not Defined in V1
+
+The confirmed decisions do not yet define downstream intermediate or mart models, identity-resolution behavior, session logic, metadata joins, aggregations, source YAML, tests, or detailed data contracts.
