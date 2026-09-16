@@ -1,0 +1,132 @@
+{
+  "records": [
+    {
+      "ad_id": "A100",
+      "ad_name": "Everyday Essentials",
+      "campaign": {"campaign_id": "C100"},
+      "creative": {"creative_id": "CR100", "creative_name": "Essentials Hero"},
+      "delivery": {"marketing_channel": "display", "status": "active"},
+      "version": {"start_timestamp": "2025-01-01T00:00:00Z", "end_timestamp": "9999-12-31"}
+    },
+    {
+      "ad_id": "A200",
+      "ad_name": "Spring Preview",
+      "campaign": {"campaign_id": "C200"},
+      "creative": {"creative_id": "CR200", "creative_name": "Spring Preview Hero"},
+      "delivery": {"marketing_channel": "paid_social", "status": "active"},
+      "version": {"start_timestamp": "2025-01-01T00:00:00Z", "end_timestamp": "2025-02-15T00:00:00Z"}
+    },
+    {
+      "ad_id": "A200",
+      "ad_name": "Spring Preview",
+      "campaign": {"campaign_id": "C200"},
+      "creative": {"creative_id": "CR200", "creative_name": "Spring Preview Hero"},
+      "delivery": {"marketing_channel": "paid_social", "status": "paused"},
+      "version": {"start_timestamp": "2025-02-15T00:00:00Z", "end_timestamp": "2025-03-10T12:00:00Z"}
+    },
+    {
+      "ad_id": "A200",
+      "ad_name": "Spring Preview",
+      "campaign": {"campaign_id": "C200"},
+      "creative": {"creative_id": "CR200", "creative_name": "Spring Preview Hero"},
+      "delivery": {"marketing_channel": "paid_social", "status": "active"},
+      "version": {"start_timestamp": "2025-03-10T12:00:00Z", "end_timestamp": "9999-12-31"}
+    },
+    {
+      "ad_id": "A300",
+      "ad_name": "Member Benefits",
+      "campaign": {"campaign_id": "C300"},
+      "creative": {"creative_id": "CR300", "creative_name": "Benefits Blue"},
+      "delivery": {"marketing_channel": "email", "status": "active"},
+      "version": {"start_timestamp": "2025-01-01T00:00:00Z", "end_timestamp": "2025-05-01T00:00:00Z"}
+    },
+    {
+      "ad_id": "A300",
+      "ad_name": "Member Benefits",
+      "campaign": {"campaign_id": "C300"},
+      "creative": {"creative_id": "CR301", "creative_name": "Benefits Green"},
+      "delivery": {"marketing_channel": "email", "status": "active"},
+      "version": {"start_timestamp": "2025-05-01T00:00:00Z", "end_timestamp": "9999-12-31"}
+    },
+    {
+      "ad_id": "A400",
+      "ad_name": "Weekend Offer",
+      "campaign": {"campaign_id": "C400"},
+      "creative": {"creative_id": "CR400", "creative_name": "Weekend Offer Tile"},
+      "delivery": {"marketing_channel": "paid_social", "status": "active"},
+      "version": {"start_timestamp": "2025-01-01T00:00:00Z", "end_timestamp": "2025-06-15T00:00:00Z"}
+    },
+    {
+      "ad_id": "A400",
+      "ad_name": "Weekend Offer",
+      "campaign": {"campaign_id": "C400"},
+      "creative": {"creative_id": "CR400", "creative_name": "Weekend Offer Tile"},
+      "delivery": {"marketing_channel": "display", "status": "active"},
+      "version": {"start_timestamp": "2025-06-15T00:00:00Z", "end_timestamp": "9999-12-31"}
+    },
+    {
+      "ad_id": "A500",
+      "ad_name": "Search Savings",
+      "campaign": {"campaign_id": "C500"},
+      "creative": {"creative_id": "CR500", "creative_name": "Savings Search Copy"},
+      "delivery": {"marketing_channel": "paid_search", "status": "active"},
+      "version": {"start_timestamp": "2025-01-01T00:00:00Z", "end_timestamp": "2025-07-01T00:00:00Z"}
+    },
+    {
+      "ad_id": "A500",
+      "ad_name": "Search Savings",
+      "campaign": {"campaign_id": "C501"},
+      "creative": {"creative_id": "CR500", "creative_name": "Savings Search Copy"},
+      "delivery": {"marketing_channel": "paid_search", "status": "active"},
+      "version": {"start_timestamp": "2025-07-01T00:00:00Z", "end_timestamp": "9999-12-31"}
+    },
+    {
+      "ad_id": "A600",
+      "ad_name": "Loyalty Reminder",
+      "campaign": {"campaign_id": "C600"},
+      "creative": {"creative_id": "CR600", "creative_name": "Loyalty Reminder Banner"},
+      "delivery": {"marketing_channel": "display", "status": "active"},
+      "version": {"start_timestamp": "2025-01-01T00:00:00Z", "end_timestamp": "2025-04-01T00:00:00Z"}
+    },
+    {
+      "ad_id": "A600",
+      "ad_name": "Loyalty Reminder",
+      "campaign": {"campaign_id": "C600"},
+      "creative": {"creative_id": "CR600", "creative_name": "Loyalty Reminder Banner"},
+      "delivery": {"marketing_channel": "display", "status": "inactive"},
+      "version": {"start_timestamp": "2025-04-01T00:00:00Z", "end_timestamp": "9999-12-31"}
+    },
+    {
+      "ad_id": "A700",
+      "ad_name": "Account Welcome",
+      "campaign": {"campaign_id": "C700"},
+      "creative": {"creative_id": "CR700", "creative_name": "Welcome Search Card"},
+      "delivery": {"marketing_channel": "paid_search", "status": "active"},
+      "version": {"start_timestamp": "2025-01-01T00:00:00Z", "end_timestamp": "9999-12-31"}
+    },
+    {
+      "ad_id": "A800",
+      "ad_name": "Summer Story",
+      "campaign": {"campaign_id": "C800"},
+      "creative": {"creative_id": "CR800", "creative_name": "Summer Story Video"},
+      "delivery": {"marketing_channel": "online_video", "status": "active"},
+      "version": {"start_timestamp": "2025-01-01T00:00:00Z", "end_timestamp": "9999-12-31"}
+    },
+    {
+      "ad_id": "A900",
+      "ad_name": "Summer Retargeting",
+      "campaign": {"campaign_id": "C900"},
+      "creative": {"creative_id": "CR800", "creative_name": "Summer Story Video"},
+      "delivery": {"marketing_channel": "connected_tv", "status": "active"},
+      "version": {"start_timestamp": "2025-01-01T00:00:00Z", "end_timestamp": "9999-12-31"}
+    },
+    {
+      "ad_id": "A1000",
+      "ad_name": "Autumn Awareness",
+      "campaign": {"campaign_id": "C1000"},
+      "creative": {"creative_id": "CR1000", "creative_name": "Autumn Awareness Display"},
+      "delivery": {"marketing_channel": "display", "status": "active"},
+      "version": {"start_timestamp": "2025-08-01T00:00:00Z", "end_timestamp": "9999-12-31"}
+    }
+  ]
+}

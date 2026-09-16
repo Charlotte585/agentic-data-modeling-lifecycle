@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: ad_events
+      - name: identity_map
+      - name: ad_metadata
