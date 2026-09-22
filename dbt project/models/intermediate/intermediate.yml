@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: int_ad_events_identity_resolved
+    description: >-
+      Resolves each ad interaction event to the visitor identity-history record
+      valid at the event timestamp. The model retains one row per ad interaction
+      event and uses a left temporal join with half-open identity windows [start,
+      end), so events without a valid identity-history record remain visible.
+      A valid anonymous record is a successful temporal match but is not a
+      resolved customer; an unmatched event has no valid identity record.
+    columns:
+      - name: event_id
+        description: Primary key for the ad interaction event.
+        data_tests:
+          - not_null
+          - unique
+      - name: event_timestamp
+        description: Timestamp when the ad interaction occurred.
+      - name: event_type
+        description: Normalized interaction type emitted by the behavioral source.
+      - name: visitor_id
+        description: Source visitor identifier associated with the event.
+      - name: campaign_id
+        description: Source campaign identifier carried by the event.
+      - name: ad_id
+        description: Source advertisement identifier carried by the event.
+      - name: creative_id
+        description: Source creative identifier carried by the event.
+      - name: placement_id
+        description: Source placement identifier where the event occurred.
+      - name: device_type
+        description: Normalized device type associated with the event.
+      - name: customer_id
+        description: Customer identifier from the identity record valid at event time; null for anonymous or unmatched events.
+      - name: account_id
+        description: Account identifier from the identity record valid at event time; null for anonymous or unmatched events.
+      - name: identity_type
+        description: Event-time identity classification; null when no identity record matched.
+      - name: account_status
+        description: Event-time account status for a verified customer; null for anonymous or unmatched events.
+      - name: identity_effective_from_timestamp
+        description: Inclusive start timestamp of the identity-history record matched to the event.
+      - name: identity_effective_to_timestamp
+        description: Exclusive end timestamp of the identity-history record matched to the event.
+      - name: identity_record_matched_flag
+        description: >-
+          True when an identity-history record was valid for the visitor at event
+          time. This is true for valid anonymous records and false for unmatched
+          events.
+      - name: identity_resolved_flag
+        description: >-
+          True only when the event-time identity is a verified customer with both
+          customer_id and account_id. This is false for valid anonymous records
+          and unmatched events.
