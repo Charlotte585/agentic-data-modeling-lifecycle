@@ -1,0 +1,81 @@
+version: 2
+
+models:
+  - name: stg_ad_events
+    description: >-
+      Cleaned ad interaction events at the grain of one row per tracked ad
+      interaction event, preserved from raw.ad_events.
+    columns:
+      - name: event_id
+        description: Unique identifier for the tracked ad interaction event.
+        data_tests:
+          - not_null
+          - unique
+      - name: event_timestamp
+        description: Timestamp when the tracked ad interaction occurred.
+      - name: event_type
+        description: Normalized interaction type emitted by the behavioral source.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [impression, view, click]
+      - name: visitor_id
+        description: Source visitor identifier associated with the event.
+      - name: campaign_id
+        description: Source campaign identifier carried by the event.
+      - name: ad_id
+        description: Source advertisement identifier carried by the event.
+      - name: creative_id
+        description: Source creative identifier carried by the event.
+      - name: placement_id
+        description: Source placement identifier where the event occurred.
+      - name: device_type
+        description: Normalized device type associated with the event.
+
+  - name: stg_identity_map
+    description: >-
+      Cleaned identity history at the grain of one row per visitor-account
+      identity state version, preserving every row from raw.identity_map.
+    columns:
+      - name: visitor_id
+        description: Source visitor identifier represented by the identity version.
+      - name: customer_id
+        description: Customer identifier when the visitor is verified; otherwise null.
+      - name: account_id
+        description: Account identifier when the visitor is verified; otherwise null.
+      - name: identity_type
+        description: Normalized identity classification for the history version.
+      - name: account_status
+        description: Normalized account status for verified identities; otherwise null.
+      - name: identity_effective_from_timestamp
+        description: Timestamp when the identity state version becomes effective.
+      - name: identity_effective_to_timestamp
+        description: >-
+          Timestamp when the identity state version ends; current versions retain
+          the 9999-12-31 convention.
+
+  - name: stg_ad_metadata
+    description: >-
+      Cleaned advertising metadata at the grain of one row per ad configuration
+      version, preserving every row from raw.ad_metadata.
+    columns:
+      - name: ad_id
+        description: Source advertisement identifier for the configuration version.
+      - name: ad_name
+        description: Source name of the advertisement.
+      - name: campaign_id
+        description: Source campaign assigned to the advertisement version.
+      - name: creative_id
+        description: Source creative assigned to the advertisement version.
+      - name: creative_name
+        description: Source name of the assigned creative.
+      - name: marketing_channel
+        description: Normalized marketing channel for the advertisement version.
+      - name: ad_status
+        description: Normalized delivery status for the advertisement version.
+      - name: ad_version_start_timestamp
+        description: Timestamp when the advertisement configuration becomes effective.
+      - name: ad_version_end_timestamp
+        description: >-
+          Timestamp when the advertisement configuration ends; current versions
+          retain the 9999-12-31 convention.

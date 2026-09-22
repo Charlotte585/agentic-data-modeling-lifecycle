@@ -1,0 +1,14 @@
+visitor_id,customer_id,account_id,identity_type,account_status,effective_from,effective_to
+V100,,,anonymous,,2025-01-01,9999-12-31
+V200,,,anonymous,,2025-01-01,2025-02-01
+V200,C200,AC200,verified,active,2025-02-01,9999-12-31
+V300,C300,AC300,verified,active,2025-01-01,9999-12-31
+V400,C400,AC400,verified,active,2025-01-01,2025-02-15
+V400,C400,AC400,verified,suspended,2025-02-15,2025-03-10
+V400,C400,AC400,verified,active,2025-03-10,9999-12-31
+V500,C500,AC500,verified,active,2025-01-01,2025-04-20
+V500,C500,AC500,verified,canceled,2025-04-20,9999-12-31
+V600,C600,AC600-1,verified,active,2025-01-01,2025-03-01
+V600,C600,AC600-1,verified,canceled,2025-03-01,2025-06-01
+V600,C600,AC600-2,verified,active,2025-06-01,9999-12-31
+V700,C700,AC700,verified,active,2025-01-01,9999-12-31
