@@ -127,3 +127,23 @@ Reusable Data Products
 - **GitHub Actions** — CI
 - **LLM / agents** — implementation assistance, review, and targeted repair
 
+## Current Implementation
+
+Implemented: synthetic event, identity, and advertising API fixtures; Python raw loading;
+three dbt staging models; and event-time identity resolution with history-integrity tests.
+Sessionization, ad metadata enrichment, and the final marts remain in development.
+
+## Local Validation
+
+Run from the repository root:
+
+```bash
+python -m scripts.validate_source_fixtures
+python -m unittest discover -s tests -p 'test_*.py'
+python scripts/load_raw_data.py
+cd "dbt project"
+dbt build --select +int_ad_events_identity_resolved
+```
+
+The fixture validator checks source payloads before ingestion. dbt tests check
+modeled grains, identity history, and ad configuration windows after loading.

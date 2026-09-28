@@ -58,6 +58,12 @@ models:
     description: >-
       Cleaned advertising metadata at the grain of one row per ad configuration
       version, preserving every row from raw.ad_metadata.
+    data_tests:
+      - no_overlapping_intervals:
+          arguments:
+            entity_column: ad_id
+            start_column: ad_version_start_timestamp
+            end_column: ad_version_end_timestamp
     columns:
       - name: ad_id
         description: Source advertisement identifier for the configuration version.
