@@ -53,3 +53,45 @@ models:
           True only when the event-time identity is a verified customer with both
           customer_id and account_id. This is false for valid anonymous records
           and unmatched events.
+
+  - name: int_ad_events_enriched
+    description: >-
+      One row per ad event from int_ad_events_identity_resolved, with all event
+      and resolved identity fields passed through unchanged. Left joins
+      stg_ad_metadata on ad_id and event_timestamp within the half-open ad
+      version window [start, end), using UTC timestamps from staging. Events
+      without a valid ad version remain visible with null metadata and a false
+      match flag. Paused and inactive versions are retained. Source campaign_id
+      and creative_id are not overwritten; version-specific IDs have separate
+      names. Valid, non-overlapping ad windows are enforced upstream; invalid
+      history fails tests rather than being silently deduplicated here.
+    columns:
+      - name: event_id
+        description: Primary key inherited from the identity-resolved event.
+        data_tests:
+          - not_null
+          - unique
+      - name: campaign_id
+        description: Source campaign ID from the event, unchanged by enrichment.
+      - name: creative_id
+        description: Source creative ID from the event, unchanged by enrichment.
+      - name: ad_name
+        description: Advertisement name from the version valid at event time; null when unmatched.
+      - name: ad_metadata_campaign_id
+        description: Campaign ID assigned to the matched ad version; may differ from the event campaign_id.
+      - name: ad_metadata_creative_id
+        description: Creative ID assigned to the matched ad version; may differ from the event creative_id.
+      - name: creative_name
+        description: Creative name from the matched ad version; null when unmatched.
+      - name: marketing_channel
+        description: Marketing channel from the matched ad version; null when unmatched.
+      - name: ad_status
+        description: Delivery status from the matched ad version, including paused or inactive; null when unmatched.
+      - name: ad_version_start_timestamp
+        description: Inclusive start of the matched ad version; null when unmatched.
+      - name: ad_version_end_timestamp
+        description: Exclusive end of the matched ad version; current versions retain 9999-12-31; null when unmatched.
+      - name: ad_metadata_matched_flag
+        description: True when an ad version is valid at event time; independent of identity resolution and ad status.
+        data_tests:
+          - not_null
