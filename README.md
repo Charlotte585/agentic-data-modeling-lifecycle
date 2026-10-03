@@ -1,24 +1,48 @@
 # Agentic Data Modeling Lifecycle
 
-> **Status:** Reference data product design and dbt implementation in progress
+**Advertising data products built with Python, SQL, dbt, and DuckDB.**
 
-An end-to-end data modeling project that translates business requirements and heterogeneous source data into reusable, validated data products.
+This project explores how to turn business requirements and heterogeneous source data into reusable data products for analytics and downstream ML. The current implementation validates and loads synthetic sources, standardizes advertising data, and matches engagement events to the identity record valid at the time of each event.
 
-The project covers the lifecycle from source semantics and dimensional modeling to dbt implementation, testing, and eventually agent-assisted development.
+**Business problem:** A visitor's identity and account status can change over time. Joining historical events to the latest identity record can misrepresent who the visitor was when the event occurred. This project makes event grain, temporal validity, and data quality explicit modeling decisions.
 
-```text
-Business Requirements
-        ↓
-Source Semantics & Modeling Decisions
-        ↓
-dbt Transformation
-        ↓
-Validated Data Products
-        ↓
-Analytics / Feature Engineering / ML
-```
+> **Status:** In development. Source validation, raw loading, three staging models, and event-time identity resolution are implemented. Ad metadata enrichment, sessionization, final marts, CI automation, and reusable agent workflows are planned.
 
-## Data Products
+## Start Here
+
+- [Business context and reference case](examples/primary_case/README.md)
+- [Customer Ad Engagement specification](examples/primary_case/customer_ad_engagement/data_product_spec.md)
+- [Event-time identity resolution SQL](dbt%20project/models/intermediate/int_ad_events_identity_resolved.sql)
+- [Model documentation and tests](dbt%20project/models/intermediate/intermediate.yml)
+- [Local validation commands](#local-validation)
+
+## What Is Implemented
+
+| Component | Current implementation |
+| --- | --- |
+| Source data | Synthetic ad events, identity history, and advertising API payloads |
+| Python | Source fixture validation, validation unit tests, and raw loading |
+| dbt staging | Ad events, identity history, and versioned ad metadata |
+| dbt intermediate | Event-time identity resolution using effective-date windows |
+| Data quality | Event uniqueness, identity-history integrity, and ad configuration window checks |
+
+## Example: Identity at the Time of the Event
+
+Visitor `V200` is anonymous before February 1, 2025, and becomes a verified customer on that date. Visitor `V999` has no identity history record.
+
+The table below shows **expected selected output**, derived from the checked-in [event fixtures](fixtures/ad_events.jsonl), [identity history](fixtures/identity_map.csv), and current SQL. It is an explanatory example, not a captured dbt run.
+
+| Event | Event timestamp (UTC) | Visitor | Customer | Identity type | History matched | Identity resolved |
+| --- | --- | --- | --- | --- | --- | --- |
+| E004 | 2025-01-15 10:00:00 | V200 | NULL | anonymous | true | false |
+| E006 | 2025-02-01 00:00:00 | V200 | C200 | verified_customer | true | true |
+| E028 | 2025-09-01 13:00:00 | V999 | NULL | NULL | false | false |
+
+The join uses an inclusive start and exclusive end: `event_timestamp >= effective_from` and `event_timestamp < effective_to`. The left join retains events without an identity match. History-window checks and event uniqueness tests guard against ambiguous matches and duplicate events.
+
+## Data Product Design
+
+The sections below describe the target data products and downstream uses; final marts and ML models are not yet implemented.
 
 ### 1. Customer Ad Engagement
 
@@ -124,8 +148,8 @@ Reusable Data Products
 - **dbt Core** — transformation and modeling
 - **DuckDB** — local execution
 - **SQL / Python** — data processing and validation
-- **GitHub Actions** — CI
-- **LLM / agents** — implementation assistance, review, and targeted repair
+- **GitHub Actions** — planned CI automation
+- **LLM / agents** — planned reusable workflows for implementation assistance, review, and targeted repair
 
 ## Current Implementation
 
@@ -134,6 +158,8 @@ three dbt staging models; and event-time identity resolution with history-integr
 Sessionization, ad metadata enrichment, and the final marts remain in development.
 
 ## Local Validation
+
+These commands assume Python dependencies, dbt Core with the DuckDB adapter, and the `agentic_data_modeling` dbt profile have already been configured. A complete bootstrap guide is still planned.
 
 Run from the repository root:
 
