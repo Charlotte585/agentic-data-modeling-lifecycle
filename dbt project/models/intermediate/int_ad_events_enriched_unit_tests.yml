@@ -1,0 +1,51 @@
+version: 2
+
+unit_tests:
+  - name: ad_enrichment_respects_windows_and_preserves_events
+    description: >-
+      Covers inclusive starts, exclusive ends, adjacent versions, a history gap,
+      unknown ads, and paused/inactive versions. Conflicting source identifiers
+      and resolved/anonymous/unmatched identity fields must pass through unchanged.
+    model: int_ad_events_enriched
+    given:
+      - input: ref('int_ad_events_identity_resolved')
+        format: sql
+        rows: |
+          select
+              event_id,
+              cast(event_timestamp as timestamp) as event_timestamp,
+              ad_id,
+              'SOURCE_CAMPAIGN' as campaign_id,
+              'SOURCE_CREATIVE' as creative_id,
+              customer_id,
+              identity_type,
+              identity_record_matched_flag,
+              identity_resolved_flag
+          from (values
+              ('before', '2025-01-01 23:59:59', 'A1', 'C1', 'verified_customer', true, true),
+              ('start', '2025-01-02 00:00:00', 'A1', 'C1', 'verified_customer', true, true),
+              ('before_boundary', '2025-01-02 23:59:59', 'A1', null, 'anonymous', true, false),
+              ('boundary', '2025-01-03 00:00:00', 'A1', null, null, false, false),
+              ('gap', '2025-01-04 00:00:00', 'A1', 'C1', 'verified_customer', true, true),
+              ('after_gap', '2025-01-05 00:00:00', 'A1', 'C1', 'verified_customer', true, true),
+              ('end', '2025-01-06 00:00:00', 'A1', 'C1', 'verified_customer', true, true),
+              ('unknown', '2025-01-02 12:00:00', 'UNKNOWN', 'C1', 'verified_customer', true, true)
+          ) as events(event_id, event_timestamp, ad_id, customer_id, identity_type,
+                      identity_record_matched_flag, identity_resolved_flag)
+      - input: ref('stg_ad_metadata')
+        rows:
+          - {ad_id: A1, ad_name: Old, campaign_id: C_OLD, creative_id: CR_OLD, creative_name: Old creative, marketing_channel: display, ad_status: active, ad_version_start_timestamp: '2025-01-02 00:00:00', ad_version_end_timestamp: '2025-01-03 00:00:00'}
+          - {ad_id: A1, ad_name: New, campaign_id: C_NEW, creative_id: CR_NEW, creative_name: New creative, marketing_channel: email, ad_status: paused, ad_version_start_timestamp: '2025-01-03 00:00:00', ad_version_end_timestamp: '2025-01-04 00:00:00'}
+          - {ad_id: A1, ad_name: Final, campaign_id: C_FINAL, creative_id: CR_FINAL, creative_name: Final creative, marketing_channel: paid_search, ad_status: inactive, ad_version_start_timestamp: '2025-01-05 00:00:00', ad_version_end_timestamp: '2025-01-06 00:00:00'}
+    expect:
+      format: csv
+      rows: |
+        event_id,campaign_id,creative_id,customer_id,identity_type,identity_record_matched_flag,identity_resolved_flag,ad_metadata_matched_flag,ad_metadata_campaign_id,ad_metadata_creative_id,ad_name,creative_name,marketing_channel,ad_status,ad_version_start_timestamp,ad_version_end_timestamp
+        before,SOURCE_CAMPAIGN,SOURCE_CREATIVE,C1,verified_customer,true,true,false,,,,,,,,
+        start,SOURCE_CAMPAIGN,SOURCE_CREATIVE,C1,verified_customer,true,true,true,C_OLD,CR_OLD,Old,Old creative,display,active,2025-01-02 00:00:00,2025-01-03 00:00:00
+        before_boundary,SOURCE_CAMPAIGN,SOURCE_CREATIVE,,anonymous,true,false,true,C_OLD,CR_OLD,Old,Old creative,display,active,2025-01-02 00:00:00,2025-01-03 00:00:00
+        boundary,SOURCE_CAMPAIGN,SOURCE_CREATIVE,,,false,false,true,C_NEW,CR_NEW,New,New creative,email,paused,2025-01-03 00:00:00,2025-01-04 00:00:00
+        gap,SOURCE_CAMPAIGN,SOURCE_CREATIVE,C1,verified_customer,true,true,false,,,,,,,,
+        after_gap,SOURCE_CAMPAIGN,SOURCE_CREATIVE,C1,verified_customer,true,true,true,C_FINAL,CR_FINAL,Final,Final creative,paid_search,inactive,2025-01-05 00:00:00,2025-01-06 00:00:00
+        end,SOURCE_CAMPAIGN,SOURCE_CREATIVE,C1,verified_customer,true,true,false,,,,,,,,
+        unknown,SOURCE_CAMPAIGN,SOURCE_CREATIVE,C1,verified_customer,true,true,false,,,,,,,,

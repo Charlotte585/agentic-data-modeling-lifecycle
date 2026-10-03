@@ -153,9 +153,16 @@ Reusable Data Products
 
 ## Current Implementation
 
-Implemented: synthetic event, identity, and advertising API fixtures; Python raw loading;
-three dbt staging models; and event-time identity resolution with history-integrity tests.
-Sessionization, ad metadata enrichment, and the final marts remain in development.
+Implemented: synthetic event, identity, and advertising API fixtures; Python fixture
+validation and raw loading; three dbt staging models; event-time identity resolution;
+and event-time ad metadata enrichment in `int_ad_events_enriched`, with temporal
+integrity and event-preservation tests. Sessionization and the final marts remain
+in development.
+
+The enrichment model reuses `int_ad_events_identity_resolved` and left joins
+`stg_ad_metadata` by `ad_id` and the half-open version window `[start, end)`.
+It preserves unmatched events and all upstream event/identity fields, exposing
+version campaign/creative IDs separately from the original event IDs.
 
 ## Local Validation
 
@@ -168,8 +175,10 @@ python -m scripts.validate_source_fixtures
 python -m unittest discover -s tests -p 'test_*.py'
 python scripts/load_raw_data.py
 cd "dbt project"
-dbt build --select +int_ad_events_identity_resolved
+dbt build --select +int_ad_events_enriched
 ```
 
 The fixture validator checks source payloads before ingestion. dbt tests check
 modeled grains, identity history, and ad configuration windows after loading.
+The enrichment checks compare input/output counts for every event_id and test
+version boundaries, gaps, unmatched ads, and unchanged event/identity fields.
