@@ -2,17 +2,18 @@
 
 **Advertising data products built with Python, SQL, dbt, and DuckDB.**
 
-This project explores how to turn business requirements and heterogeneous source data into reusable data products for analytics and downstream ML. The current implementation validates and loads synthetic sources, standardizes advertising data, and matches engagement events to the identity record valid at the time of each event.
+This project explores how to turn business requirements and heterogeneous source data into reusable data products for analytics and downstream ML. The current implementation validates and loads synthetic sources, standardizes advertising data, and enriches engagement events with the identity record and ad metadata version valid at the time of each event.
 
 **Business problem:** A visitor's identity and account status can change over time. Joining historical events to the latest identity record can misrepresent who the visitor was when the event occurred. This project makes event grain, temporal validity, and data quality explicit modeling decisions.
 
-> **Status:** In development. Source validation, raw loading, three staging models, and event-time identity resolution are implemented. Ad metadata enrichment, sessionization, final marts, CI automation, and reusable agent workflows are planned.
+> **Status:** In development. Source validation, raw loading, three staging models, event-time identity resolution, and event-time ad metadata enrichment with temporal integrity and event-preservation tests are implemented. Sessionization, final marts, ML models, CI automation, and reusable agent workflows are planned and not yet implemented.
 
 ## Start Here
 
 - [Business context and reference case](examples/primary_case/README.md)
 - [Customer Ad Engagement specification](examples/primary_case/customer_ad_engagement/data_product_spec.md)
 - [Event-time identity resolution SQL](dbt%20project/models/intermediate/int_ad_events_identity_resolved.sql)
+- [Event-time ad metadata enrichment SQL](dbt%20project/models/intermediate/int_ad_events_enriched.sql)
 - [Model documentation and tests](dbt%20project/models/intermediate/intermediate.yml)
 - [Local validation commands](#local-validation)
 
@@ -23,8 +24,8 @@ This project explores how to turn business requirements and heterogeneous source
 | Source data | Synthetic ad events, identity history, and advertising API payloads |
 | Python | Source fixture validation, validation unit tests, and raw loading |
 | dbt staging | Ad events, identity history, and versioned ad metadata |
-| dbt intermediate | Event-time identity resolution using effective-date windows |
-| Data quality | Event uniqueness, identity-history integrity, and ad configuration window checks |
+| dbt intermediate | Event-time identity resolution and ad metadata enrichment using effective-date windows; one row per event |
+| Data quality | Event uniqueness, identity-history integrity, ad configuration window checks, per-event input/output count reconciliation, and enrichment unit tests for version boundaries, gaps, unmatched ads, and field preservation |
 
 ## Example: Identity at the Time of the Event
 
@@ -156,8 +157,8 @@ Reusable Data Products
 Implemented: synthetic event, identity, and advertising API fixtures; Python fixture
 validation and raw loading; three dbt staging models; event-time identity resolution;
 and event-time ad metadata enrichment in `int_ad_events_enriched`, with temporal
-integrity and event-preservation tests. Sessionization and the final marts remain
-in development.
+integrity and event-preservation tests. Sessionization, final marts, ML models,
+CI automation, and reusable agent workflows are planned and not yet implemented.
 
 The enrichment model reuses `int_ad_events_identity_resolved` and left joins
 `stg_ad_metadata` by `ad_id` and the half-open version window `[start, end)`.
